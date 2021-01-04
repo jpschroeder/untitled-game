@@ -99,10 +99,6 @@ const isCollision = (row, col) => {
 
 let hero = {};
 
-let heroTile = null;
-let heroRow = 11;
-let heroCol = 0;
-
 const getCharacterDirection = (startid) => {
     return {
         walk1: getTile(startid),
@@ -116,20 +112,23 @@ const getCharacter = (startid) => {
         down: getCharacterDirection(startid),
         left: getCharacterDirection(startid + 12),
         right: getCharacterDirection(startid + 24),
-        up: getCharacterDirection(startid + 36)
+        up: getCharacterDirection(startid + 36),
+        tile: null,
+        row: 0,
+        col: 0
     }
 }
 
 const changeHero = (tile, row, col) => {
-    renderTile(heroRow, heroCol);
-    heroTile = tile;
-    heroRow = row;
-    heroCol = col;
-    drawTile(heroTile, heroRow, heroCol);
+    renderTile(hero.row, hero.col);
+    hero.tile = tile;
+    hero.row = row;
+    hero.col = col;
+    drawTile(hero.tile, hero.row, hero.col);
 }
 
 const getNextTile = (dir) => {
-    switch(heroTile) {
+    switch(hero.tile) {
         case dir.still: return dir.walk1;
         case dir.walk1: return dir.walk2;
         case dir.walk2: return dir.walk1;
@@ -140,26 +139,43 @@ const getNextTile = (dir) => {
 const heroMotion = (dir, row, col) => {
     const next = getNextTile(dir);
     if (next == dir.still || row < 0 || col < 0 || row >= map.height || col >= map.width || isCollision(row, col))
-        changeHero(dir.still, heroRow, heroCol);
+        changeHero(dir.still, hero.row, hero.col);
     else
         changeHero(next, row, col);
 };
 
 document.addEventListener('keydown', (e) => {
     switch(e.key) {
-        case 'ArrowRight': return heroMotion(hero.right, heroRow, heroCol + 1);
-        case 'ArrowLeft':  return heroMotion(hero.left, heroRow, heroCol - 1);
-        case 'ArrowUp':    return heroMotion(hero.up, heroRow - 1, heroCol);
-        case 'ArrowDown':  return heroMotion(hero.down, heroRow + 1, heroCol);
+        case 'ArrowRight': return heroMotion(hero.right, hero.row, hero.col + 1);
+        case 'ArrowLeft':  return heroMotion(hero.left, hero.row, hero.col - 1);
+        case 'ArrowUp':    return heroMotion(hero.up, hero.row - 1, hero.col);
+        case 'ArrowDown':  return heroMotion(hero.down, hero.row + 1, hero.col);
     }
 });
+
+// ENEMIES
+
+let bat = {};
+
+setInterval(() => {
+
+}, 1000);
 
 // INIT
 
 loadImages(() => {
     renderMap();
+
     hero = getCharacter(124);
-    heroTile = hero.right.still;
-    drawTile(heroTile, heroRow, heroCol);
+    hero.tile = hero.right.still;
+    hero.row = 11;
+    hero.col = 0;
+    drawTile(hero.tile, hero.row, hero.col);
+
+    bat = getCharacter(172);
+    bat.tile = bat.right.still;
+    bat.row = 1;
+    bat.col = 20;
+    drawTile(bat.tile, bat.row, bat.col);
 });
 
