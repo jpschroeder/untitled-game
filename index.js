@@ -173,7 +173,10 @@ setInterval(() => {
 // INIT
 
 loadImages(() => {
+    const t0 = performance.now();
     renderMap();
+    const t1 = performance.now();
+    console.log(`render took: ${t1 - t0}ms`)
 
     hero = getCharacter(124);
     hero.tile = hero.right.still;
