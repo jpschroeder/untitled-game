@@ -119,16 +119,16 @@ const getCharacter = (startid) => {
     }
 }
 
-const changeHero = (tile, row, col) => {
-    renderTile(hero.row, hero.col);
-    hero.tile = tile;
-    hero.row = row;
-    hero.col = col;
-    drawTile(hero.tile, hero.row, hero.col);
+const changeObject = (object, tile, row, col) => {
+    renderTile(object.row, object.col); // render the tile where the object currently is
+    object.tile = tile;
+    object.row = row;
+    object.col = col;
+    drawTile(object.tile, object.row, object.col);
 }
 
-const getNextTile = (dir) => {
-    switch(hero.tile) {
+const getNextTile = (tile, dir) => {
+    switch(tile) {
         case dir.still: return dir.walk1;
         case dir.walk1: return dir.walk2;
         case dir.walk2: return dir.walk1;
@@ -136,20 +136,20 @@ const getNextTile = (dir) => {
     }
 }
 
-const heroMotion = (dir, row, col) => {
-    const next = getNextTile(dir);
+const motion = (object, dir, row, col) => {
+    const next = getNextTile(object.tile, dir);
     if (next == dir.still || row < 0 || col < 0 || row >= map.height || col >= map.width || isCollision(row, col))
-        changeHero(dir.still, hero.row, hero.col);
+        changeObject(object, dir.still, object.row, object.col); // stay in the same place (stand still)
     else
-        changeHero(next, row, col);
+        changeObject(object, next, row, col); // move
 };
 
 document.addEventListener('keydown', (e) => {
     switch(e.key) {
-        case 'ArrowRight': return heroMotion(hero.right, hero.row, hero.col + 1);
-        case 'ArrowLeft':  return heroMotion(hero.left, hero.row, hero.col - 1);
-        case 'ArrowUp':    return heroMotion(hero.up, hero.row - 1, hero.col);
-        case 'ArrowDown':  return heroMotion(hero.down, hero.row + 1, hero.col);
+        case 'ArrowRight': return motion(hero, hero.right, hero.row, hero.col + 1);
+        case 'ArrowLeft':  return motion(hero, hero.left, hero.row, hero.col - 1);
+        case 'ArrowUp':    return motion(hero, hero.up, hero.row - 1, hero.col);
+        case 'ArrowDown':  return motion(hero, hero.down, hero.row + 1, hero.col);
     }
 });
 
@@ -157,9 +157,18 @@ document.addEventListener('keydown', (e) => {
 
 let bat = {};
 
+let i = 0;
 setInterval(() => {
-
-}, 1000);
+    if (i % 12 < 3)
+        motion(bat, bat.right, bat.row, bat.col + 1);
+    else if (i % 12 < 6)
+        motion(bat, bat.down, bat.row + 1, bat.col);
+    else if (i % 12 < 9)
+        motion(bat, bat.left, bat.row, bat.col - 1);
+    else
+        motion(bat, bat.up, bat.row - 1, bat.col);
+    i++;
+}, 500);
 
 // INIT
 
@@ -173,7 +182,7 @@ loadImages(() => {
     drawTile(hero.tile, hero.row, hero.col);
 
     bat = getCharacter(172);
-    bat.tile = bat.right.still;
+    bat.tile = bat.down.still;
     bat.row = 1;
     bat.col = 20;
     drawTile(bat.tile, bat.row, bat.col);
