@@ -43,7 +43,7 @@ const getTile = (gid) => {
     }
 }
 
-const drawTile = (tile, row, col) => {
+const drawTile = (tile, [row, col]) => {
     context.drawImage(
         tile.image, // image
         tile.sx, // source x
@@ -57,39 +57,34 @@ const drawTile = (tile, row, col) => {
     );
 }
 
-const getOffset = (layer, row, col) => (row * layer.width) + col;
-
-const drawLayerTile = (layer, row, col) => {
-    const offset = getOffset(layer, row, col);
-    const gid = layer.data[offset];
-    if (gid == 0)
-        return;
-    const tile = getTile(gid);
-    drawTile(tile, row, col);
-}
+const getOffset = ([row, col]) => (row * map.width) + col;
+const getPosition = (offset) => {
+    return [
+        /* row */ Math.floor(offset / map.width),
+        /* col */ offset % map.width
+    ]
+};
 
 const renderMap = () => {
+    for(let row = 0; row < map.height; row++)
+        for(let col = 0; col < map.width; col++)
+            renderTile([row, col]);
+}
+
+const renderTile = (pos) => {
     for(const layer of map.layers) {
-        for(let row = 0; row < layer.height; row++) {
-            for(let col = 0; col < layer.width; col++) {
-                drawLayerTile(layer, row, col);
-            }
-        }
+        const gid = layer.data[getOffset(pos)];
+        if (gid == 0)
+            continue;
+        const tile = getTile(gid);
+        drawTile(tile, pos);
     }
 }
 
-const renderTile = (row, col) => {
-    for(const layer of map.layers) {
-        drawLayerTile(layer, row, col);
-    }
-}
-
-const isCollision = (row, col) => {
+const isCollision = (pos) => {
     // anything after the first 2 layers is a collision
     for(let i = 2; i < map.layers.length; i++) {
-        const layer = map.layers[i];
-        const offset = getOffset(layer, row, col);
-        if (layer.data[offset] > 0)
+        if (map.layers[i].data[getOffset(pos)] > 0)
             return true;
     }
     return false;
@@ -97,66 +92,108 @@ const isCollision = (row, col) => {
 
 // MOTION
 
-let hero = {};
+const getCharacterIds = (startid) => {
+    const getAnimationIds = (id) => {
+        return {
+            walk1: id,
+            still: id + 1,
+            walk2: id + 2
+        };
+    };
 
-const getCharacterDirection = (startid) => {
     return {
-        walk1: getTile(startid),
-        still: getTile(startid + 1),
-        walk2: getTile(startid + 2)
+        down: getAnimationIds(startid),
+        left: getAnimationIds(startid + 12),
+        right: getAnimationIds(startid + 24),
+        up: getAnimationIds(startid + 36),
+    };
+}
+
+const hasId = (character, id) => {
+    const hasAnimationId = (animation) => 
+        animation.walk1 === id || 
+        animation.still === id || 
+        animation.walk2 === id;
+    
+    return hasAnimationId(character.down) ||
+           hasAnimationId(character.left) ||
+           hasAnimationId(character.right) ||
+           hasAnimationId(character.up);
+}
+
+const getNextId = (currentId, animation) => {
+    switch(currentId) {
+        case animation.still: return animation.walk1;
+        case animation.walk1: return animation.walk2;
+        case animation.walk2: return animation.walk1;
+        default: return animation.still;
     }
 }
 
-const getCharacter = (startid) => {
-    return {
-        down: getCharacterDirection(startid),
-        left: getCharacterDirection(startid + 12),
-        right: getCharacterDirection(startid + 24),
-        up: getCharacterDirection(startid + 36),
-        tile: null,
-        row: 0,
-        col: 0
+const charLayer = map.layers[5]; // characters
+const heroIds = getCharacterIds(124);
+const batIds = getCharacterIds(172);
+
+const findCharacters = (character) => {
+    const ret = [];
+    for(let offset = 0; offset < charLayer.data.length; offset++) {
+        const id = charLayer.data[offset];
+        if (hasId(character, id))
+            ret.push(getPosition(offset))
+    }
+    return ret;
+}
+
+let heroPos = findCharacters(heroIds)[0];
+
+const getNextPosition = ([row, col], direction) => {
+    switch(direction) {
+        case 'right': return [row, col + 1];
+        case 'left': return  [row, col - 1];
+        case 'up': return    [row - 1, col];
+        case 'down': return  [row + 1, col];
     }
 }
 
-const changeObject = (object, tile, row, col) => {
-    renderTile(object.row, object.col); // render the tile where the object currently is
-    object.tile = tile;
-    object.row = row;
-    object.col = col;
-    drawTile(object.tile, object.row, object.col);
-}
+const isValidPosition = ([row, col]) => 
+    row >= 0 && row < map.height && col >= 0 &&  col < map.width;
 
-const getNextTile = (tile, dir) => {
-    switch(tile) {
-        case dir.still: return dir.walk1;
-        case dir.walk1: return dir.walk2;
-        case dir.walk2: return dir.walk1;
-        default: return dir.still;
+const moveCharacter = (characterIds, currentPos, direction) => {
+    const t0 = performance.now();
+    const currentOffset = getOffset(currentPos);
+    const nextPos = getNextPosition(currentPos, direction);
+    const currentId = charLayer.data[currentOffset];
+    const nextId = getNextId(currentId, characterIds[direction]);
+    if (nextId == characterIds[direction].still || !isValidPosition(nextPos) || isCollision(nextPos)) {
+        // stay in the same place (stand still)
+        charLayer.data[currentOffset] = characterIds[direction].still;
+        renderTile(currentPos);
     }
-}
-
-const motion = (object, dir, row, col) => {
-    const next = getNextTile(object.tile, dir);
-    if (next == dir.still || row < 0 || col < 0 || row >= map.height || col >= map.width || isCollision(row, col))
-        changeObject(object, dir.still, object.row, object.col); // stay in the same place (stand still)
-    else
-        changeObject(object, next, row, col); // move
+    else {
+        // move as expected
+        const nextOffset = getOffset(nextPos);
+        charLayer.data[currentOffset] = 0;
+        charLayer.data[nextOffset] = nextId;
+        heroPos = nextPos;
+        renderTile(currentPos);
+        renderTile(nextPos);
+    }
+    const t1 = performance.now();
+    console.log(`move took: ${t1 - t0}ms`)
 };
 
 document.addEventListener('keydown', (e) => {
     switch(e.key) {
-        case 'ArrowRight': return motion(hero, hero.right, hero.row, hero.col + 1);
-        case 'ArrowLeft':  return motion(hero, hero.left, hero.row, hero.col - 1);
-        case 'ArrowUp':    return motion(hero, hero.up, hero.row - 1, hero.col);
-        case 'ArrowDown':  return motion(hero, hero.down, hero.row + 1, hero.col);
+        case 'ArrowRight': return moveCharacter(heroIds, heroPos, 'right');
+        case 'ArrowLeft':  return moveCharacter(heroIds, heroPos, 'left');
+        case 'ArrowUp':    return moveCharacter(heroIds, heroPos, 'up');
+        case 'ArrowDown':  return moveCharacter(heroIds, heroPos, 'down');
     }
 });
 
 // ENEMIES
 
-let bat = {};
-
+/*
 let i = 0;
 setInterval(() => {
     if (i % 12 < 3)
@@ -169,6 +206,7 @@ setInterval(() => {
         motion(bat, bat.up, bat.row - 1, bat.col);
     i++;
 }, 500);
+*/
 
 // INIT
 
@@ -177,17 +215,5 @@ loadImages(() => {
     renderMap();
     const t1 = performance.now();
     console.log(`render took: ${t1 - t0}ms`)
-
-    hero = getCharacter(124);
-    hero.tile = hero.right.still;
-    hero.row = 11;
-    hero.col = 0;
-    drawTile(hero.tile, hero.row, hero.col);
-
-    bat = getCharacter(172);
-    bat.tile = bat.down.still;
-    bat.row = 1;
-    bat.col = 20;
-    drawTile(bat.tile, bat.row, bat.col);
 });
 
