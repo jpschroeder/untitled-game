@@ -1,0 +1,35 @@
+{
+    "activeFile": "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx": {
+            "scale": 2.1919270833333333,
+            "selectedLayer": 5,
+            "viewCenter": {
+                "x": 192.29654271117977,
+                "y": 112.4581204704764
+            }
+        },
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#basictiles": {
+            "scaleInDock": 1
+        },
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#characters": {
+            "scaleInDock": 1
+        },
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#dead": {
+            "scaleInDock": 1
+        },
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#things": {
+            "scaleInDock": 1
+        }
+    },
+    "map.lastUsedExportFilter": "All Files (*)",
+    "openFiles": [
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx"
+    ],
+    "project": "",
+    "recentFiles": [
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx"
+    ]
+}
