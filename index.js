@@ -130,20 +130,20 @@ const getNextId = (currentId, animation) => {
     }
 }
 
-const charLayer = map.layers[5]; // characters
-const heroIds = getCharacterIds(124);
-const batIds = getCharacterIds(172);
+const characters = 5; // the layer with the characters
+
 
 const findCharacters = (character) => {
     const ret = [];
-    for(let offset = 0; offset < charLayer.data.length; offset++) {
-        const id = charLayer.data[offset];
+    for(let offset = 0; offset < map.layers[characters].data.length; offset++) {
+        const id = map.layers[characters].data[offset];
         if (hasId(character, id))
             ret.push(getPosition(offset))
     }
     return ret;
 }
 
+const heroIds = getCharacterIds(124);
 let heroPos = findCharacters(heroIds)[0];
 
 const getNextPosition = ([row, col], direction) => {
@@ -159,54 +159,57 @@ const isValidPosition = ([row, col]) =>
     row >= 0 && row < map.height && col >= 0 &&  col < map.width;
 
 const moveCharacter = (characterIds, currentPos, direction) => {
-    const t0 = performance.now();
     const currentOffset = getOffset(currentPos);
     const nextPos = getNextPosition(currentPos, direction);
-    const currentId = charLayer.data[currentOffset];
+    const currentId = map.layers[characters].data[currentOffset];
     const nextId = getNextId(currentId, characterIds[direction]);
     if (nextId == characterIds[direction].still || !isValidPosition(nextPos) || isCollision(nextPos)) {
         // stay in the same place (stand still)
-        charLayer.data[currentOffset] = characterIds[direction].still;
+        map.layers[characters].data[currentOffset] = characterIds[direction].still;
         renderTile(currentPos);
+        return currentPos;
     }
     else {
         // move as expected
         const nextOffset = getOffset(nextPos);
-        charLayer.data[currentOffset] = 0;
-        charLayer.data[nextOffset] = nextId;
-        heroPos = nextPos;
+        map.layers[characters].data[currentOffset] = 0;
+        map.layers[characters].data[nextOffset] = nextId;
         renderTile(currentPos);
         renderTile(nextPos);
+        return nextPos;
     }
-    const t1 = performance.now();
-    console.log(`move took: ${t1 - t0}ms`)
 };
 
 document.addEventListener('keydown', (e) => {
-    switch(e.key) {
-        case 'ArrowRight': return moveCharacter(heroIds, heroPos, 'right');
-        case 'ArrowLeft':  return moveCharacter(heroIds, heroPos, 'left');
-        case 'ArrowUp':    return moveCharacter(heroIds, heroPos, 'up');
-        case 'ArrowDown':  return moveCharacter(heroIds, heroPos, 'down');
+    const keys = {
+        'ArrowRight': 'right',
+        'ArrowLeft': 'left',
+        'ArrowUp': 'up',
+        'ArrowDown': 'down'
+    };
+
+    if (e.key in keys) {
+        heroPos = moveCharacter(heroIds, heroPos, keys[e.key]);
     }
 });
 
 // ENEMIES
 
-/*
+const batIds = getCharacterIds(172);
+let batPosition = findCharacters(batIds)[0];
+
 let i = 0;
+const getNextDirection = () => {
+    if (i % 12 < 3) return 'right';
+    if (i % 12 < 6) return 'down';
+    if (i % 12 < 9) return 'left';
+    if (i % 12 < 12) return 'up';
+};
+
 setInterval(() => {
-    if (i % 12 < 3)
-        motion(bat, bat.right, bat.row, bat.col + 1);
-    else if (i % 12 < 6)
-        motion(bat, bat.down, bat.row + 1, bat.col);
-    else if (i % 12 < 9)
-        motion(bat, bat.left, bat.row, bat.col - 1);
-    else
-        motion(bat, bat.up, bat.row - 1, bat.col);
+    batPosition = moveCharacter(batIds, batPosition, getNextDirection());
     i++;
 }, 500);
-*/
 
 // INIT
 
