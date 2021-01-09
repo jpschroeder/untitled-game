@@ -132,7 +132,6 @@ const getNextId = (currentId, animation) => {
 
 const characters = 5; // the layer with the characters
 
-
 const findCharacters = (character) => {
     const ret = [];
     for(let offset = 0; offset < map.layers[characters].data.length; offset++) {
@@ -143,8 +142,6 @@ const findCharacters = (character) => {
     return ret;
 }
 
-const heroIds = getCharacterIds(124);
-let heroPos = findCharacters(heroIds)[0];
 
 const getNextPosition = ([row, col], direction) => {
     switch(direction) {
@@ -180,6 +177,9 @@ const moveCharacter = (characterIds, currentPos, direction) => {
     }
 };
 
+const heroIds = getCharacterIds(124);
+let heroPosition = findCharacters(heroIds)[0];
+
 document.addEventListener('keydown', (e) => {
     const keys = {
         'ArrowRight': 'right',
@@ -189,26 +189,49 @@ document.addEventListener('keydown', (e) => {
     };
 
     if (e.key in keys) {
-        heroPos = moveCharacter(heroIds, heroPos, keys[e.key]);
+        heroPosition = moveCharacter(heroIds, heroPosition, keys[e.key]);
     }
 });
 
 // ENEMIES
 
-const batIds = getCharacterIds(172);
-let batPosition = findCharacters(batIds)[0];
+const enemies = [{
+    type: 'skeleton',
+    ids: getCharacterIds(130)
+}, {
+    type: 'blob',
+    ids: getCharacterIds(169)
+}, {
+    type: 'bat',
+    ids: getCharacterIds(172)
+}, {
+    type: 'ghost',
+    ids: getCharacterIds(175)
+}, {
+    type: 'spider',
+    ids: getCharacterIds(178)
+}]
 
-let i = 0;
+for(const enemy of enemies) {
+    enemy.positions = findCharacters(enemy.ids);
+}
+
+let iteration = 0;
 const getNextDirection = () => {
-    if (i % 12 < 3) return 'right';
-    if (i % 12 < 6) return 'down';
-    if (i % 12 < 9) return 'left';
-    if (i % 12 < 12) return 'up';
+    if (iteration % 12 < 3) return 'right';
+    if (iteration % 12 < 6) return 'down';
+    if (iteration % 12 < 9) return 'left';
+    if (iteration % 12 < 12) return 'up';
 };
 
 setInterval(() => {
-    batPosition = moveCharacter(batIds, batPosition, getNextDirection());
-    i++;
+    const direction = getNextDirection();
+    for(const enemy of enemies) {
+        for(let i = 0; i < enemy.positions.length; i++) {
+            enemy.positions[i] = moveCharacter(enemy.ids, enemy.positions[i], direction);
+        }
+    }
+    iteration++;
 }, 500);
 
 // INIT
