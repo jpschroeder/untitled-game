@@ -7,6 +7,16 @@ const scale = 2;
 canvas.width = map.width * map.tilewidth * scale;
 canvas.height = map.height * map.tileheight * scale;
 
+const layer = {
+    ground: 0,
+    grass: 1,
+    walls: 2,
+    walls2: 3,
+    stuff: 4,
+    characters: 5,
+    weapons: 6
+}
+
 // TILES
 
 const loadImages = (callback) => {
@@ -82,9 +92,8 @@ const renderTile = (pos) => {
 }
 
 const isCollision = (pos) => {
-    // anything after the first 2 layers is a collision
-    for(let i = 2; i < map.layers.length; i++) {
-        if (map.layers[i].data[getOffset(pos)] > 0)
+    for(let l = layer.walls; l < layer.weapons; l++) {
+        if (map.layers[l].data[getOffset(pos)] > 0)
             return true;
     }
     return false;
@@ -109,39 +118,38 @@ const getCharacterIds = (startid) => {
     };
 }
 
-const hasId = (character, id) => {
-    const hasAnimationId = (animation) => 
-        animation.walk1 === id || 
-        animation.still === id || 
-        animation.walk2 === id;
-    
-    return hasAnimationId(character.down) ||
-           hasAnimationId(character.left) ||
-           hasAnimationId(character.right) ||
-           hasAnimationId(character.up);
+const getDirection = (character, id) => {
+    for(const direction in character) {
+        if (character[direction].walk1 === id || 
+            character[direction].still === id || 
+            character[direction].walk2 === id ||
+            character[direction].attack === id)
+            return direction;
+    }
+    return null;
 }
+
+const hasId = (character, id) => getDirection(character, id) !== null;
 
 const getNextId = (currentId, animation) => {
     switch(currentId) {
         case animation.still: return animation.walk1;
         case animation.walk1: return animation.walk2;
         case animation.walk2: return animation.walk1;
+        case animation.attack: return animation.still;
         default: return animation.still;
     }
 }
 
-const characters = 5; // the layer with the characters
-
 const findCharacters = (character) => {
     const ret = [];
-    for(let offset = 0; offset < map.layers[characters].data.length; offset++) {
-        const id = map.layers[characters].data[offset];
+    for(let offset = 0; offset < map.layers[layer.characters].data.length; offset++) {
+        const id = map.layers[layer.characters].data[offset];
         if (hasId(character, id))
             ret.push(getPosition(offset))
     }
     return ret;
 }
-
 
 const getNextPosition = ([row, col], direction) => {
     switch(direction) {
@@ -158,19 +166,28 @@ const isValidPosition = ([row, col]) =>
 const moveCharacter = (characterIds, currentPos, direction) => {
     const currentOffset = getOffset(currentPos);
     const nextPos = getNextPosition(currentPos, direction);
-    const currentId = map.layers[characters].data[currentOffset];
+    const currentId = map.layers[layer.characters].data[currentOffset];
+    const currentDirection = getDirection(characterIds, currentId);
     const nextId = getNextId(currentId, characterIds[direction]);
-    if (nextId == characterIds[direction].still || !isValidPosition(nextPos) || isCollision(nextPos)) {
+
+    if (currentId === characterIds[currentDirection].attack) {
+        // remove sword
+        const swordPos = getNextPosition(currentPos, currentDirection);
+        map.layers[layer.weapons].data[getOffset(swordPos)] = 0; 
+        renderTile(swordPos);
+    }
+
+    if (nextId === characterIds[direction].still || !isValidPosition(nextPos) || isCollision(nextPos)) {
         // stay in the same place (stand still)
-        map.layers[characters].data[currentOffset] = characterIds[direction].still;
+        map.layers[layer.characters].data[currentOffset] = characterIds[direction].still;
         renderTile(currentPos);
         return currentPos;
     }
     else {
         // move as expected
         const nextOffset = getOffset(nextPos);
-        map.layers[characters].data[currentOffset] = 0;
-        map.layers[characters].data[nextOffset] = nextId;
+        map.layers[layer.characters].data[currentOffset] = 0;
+        map.layers[layer.characters].data[nextOffset] = nextId;
         renderTile(currentPos);
         renderTile(nextPos);
         return nextPos;
@@ -178,6 +195,14 @@ const moveCharacter = (characterIds, currentPos, direction) => {
 };
 
 const heroIds = getCharacterIds(124);
+heroIds.right.attack = 325 + (6 * 6) + 2; // starting id + (row * rowwidth) + col
+heroIds.right.sword = 325 + (6 * 6) + 3;
+heroIds.left.attack = 325 + (7 * 6) + 3;
+heroIds.left.sword = 325 + (7 * 6) + 2;
+heroIds.down.attack = 325 + (8 * 6) + 4;
+heroIds.down.sword = 325 + (9 * 6) + 4;
+heroIds.up.attack = 325 + (3 * 6) + 3;
+heroIds.up.sword = 325 + (4 * 6) + 1;
 let heroPosition = findCharacters(heroIds)[0];
 
 document.addEventListener('keydown', (e) => {
@@ -188,8 +213,8 @@ document.addEventListener('keydown', (e) => {
         'ArrowDown': 'down'
     };
 
-    if (e.key in keys) {
-        heroPosition = moveCharacter(heroIds, heroPosition, keys[e.key]);
+    if (e.code in keys) {
+        heroPosition = moveCharacter(heroIds, heroPosition, keys[e.code]);
     }
 });
 
@@ -233,6 +258,35 @@ setInterval(() => {
     }
     iteration++;
 }, 500);
+
+// COMBAT
+
+const attack = (characterIds, currentPos) => {
+    const currentOffset = getOffset(currentPos);
+    const currentId = map.layers[layer.characters].data[currentOffset];
+    const direction = getDirection(characterIds, currentId);
+    const swordPos = getNextPosition(currentPos, direction);
+    const nextId = currentId !== characterIds[direction].attack
+                    ? characterIds[direction].attack
+                    : characterIds[direction].still;
+
+    map.layers[layer.characters].data[currentOffset] = nextId;
+    renderTile(currentPos);
+
+    if (isValidPosition(swordPos)) {
+        const swordOffset = getOffset(swordPos);
+        const nextSwordId = currentId !== characterIds[direction].attack
+                                ? characterIds[direction].sword
+                                : 0;
+        map.layers[layer.weapons].data[swordOffset] = nextSwordId;
+        renderTile(swordPos);
+    }
+};
+
+document.addEventListener('keydown', (e) => {
+    if (e.code === "Space")
+        attack(heroIds, heroPosition);
+});
 
 // INIT
 

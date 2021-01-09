@@ -3,22 +3,35 @@
     "expandedProjectPaths": [
     ],
     "fileStates": {
+        "": {
+            "scaleInDock": 3
+        },
         "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx": {
-            "scale": 2.1919270833333333,
-            "selectedLayer": 5,
+            "scale": 4,
+            "selectedLayer": 6,
             "viewCenter": {
-                "x": 192.29654271117977,
-                "y": 112.4581204704764
+                "x": 64.375,
+                "y": 146.875
             }
         },
         "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#basictiles": {
             "scaleInDock": 1
         },
         "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#characters": {
-            "scaleInDock": 1
+            "scaleInDock": 3
         },
         "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#dead": {
             "scaleInDock": 1
+        },
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#extendedmale": {
+            "scaleInDock": 3
+        },
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#extentedfemale": {
+            "scaleInDock": 3
+        },
+        "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#extentedmale": {
+            "scaleInDock": 3,
+            "scaleInEditor": 1
         },
         "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx#things": {
             "scaleInDock": 1
@@ -31,5 +44,12 @@
     "project": "",
     "recentFiles": [
         "C:/data/codelog/2021-01-02_link_awakening_link_past/map.tmx"
-    ]
+    ],
+    "tileset.embedInMap": true,
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    },
+    "tileset.transparentColor": "#6daa2c",
+    "tileset.useTransparentColor": false
 }

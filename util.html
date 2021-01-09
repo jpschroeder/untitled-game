@@ -1,0 +1,53 @@
+<html>
+<body>
+    <canvas></canvas>
+    <canvas></canvas>
+    <script>
+        const canvasOrig = document.getElementsByTagName('canvas')[0];
+        const ctxOrig = canvasOrig.getContext('2d');
+
+        const canvasFlip = document.getElementsByTagName('canvas')[1];
+        const ctxFlip = canvasFlip.getContext('2d');
+
+        const imgOrig = new Image();
+        const imgFlip = new Image();
+        imgOrig.addEventListener('load', () => {
+            // Flip the image and load it into imgFlip
+            canvasOrig.width = imgOrig.width;
+            canvasOrig.height = imgOrig.height;
+            canvasFlip.width = imgOrig.width;
+            canvasFlip.height = imgOrig.height;
+            ctxOrig.drawImage(imgOrig, 0, 0);
+            ctxFlip.scale(-1, 1);
+            ctxFlip.drawImage(imgOrig, -imgOrig.width, 0);
+            imgFlip.src = canvasFlip.toDataURL();
+        }, false);
+        imgOrig.src = 'extendedmale.png';
+        imgFlip.addEventListener('load', () => {
+            // Pull 2 of the flipped tiles into the original
+            ctxOrig.drawImage(
+                imgFlip, // image
+                16 * 2, // source x
+                16 * 6, // source y
+                16, // source width
+                16, // source height
+                16 * 2, // target x
+                16 * 7, // target y
+                16, // target width
+                16 // target height
+            );
+            ctxOrig.drawImage(
+                imgFlip, // image
+                16 * 3, // source x
+                16 * 6, // source y
+                16, // source width
+                16, // source height
+                16 * 3, // target x
+                16 * 7, // target y
+                16, // target width
+                16 // target height
+            );
+        }, false);
+    </script>
+</body>
+</html>
