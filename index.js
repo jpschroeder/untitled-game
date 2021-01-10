@@ -15,7 +15,25 @@ const layer = {
     stuff: 4,
     characters: 5,
     weapons: 6
-}
+};
+
+const startids = {
+    hero: 124,
+    skeleton: 130,
+    blob: 169,
+    bat: 172,
+    ghost: 175,
+    spider: 178
+};
+
+const deadids = {
+    hero: 217 + 1,
+    skeleton: 217 + 6,
+    blob: 217 + 7,
+    bat: 217 + 8,
+    ghost: 217 + 9,
+    spider: 217 + 10
+};
 
 // TILES
 
@@ -74,6 +92,7 @@ const getPosition = (offset) => {
         /* col */ offset % map.width
     ]
 };
+const positionEq = ([row1, col1], [row2, col2]) => row1 === row2 && col1 === col2;
 
 const renderMap = () => {
     for(let row = 0; row < map.height; row++)
@@ -101,12 +120,16 @@ const isCollision = (pos) => {
 
 // MOTION
 
-const getCharacterIds = (startid) => {
+const getCharacterIds = (character) => {
+    const startid = startids[character];
+    const dead = deadids[character];
+
     const getAnimationIds = (id) => {
         return {
             walk1: id,
             still: id + 1,
-            walk2: id + 2
+            walk2: id + 2,
+            dead: dead
         };
     };
 
@@ -123,7 +146,8 @@ const getDirection = (character, id) => {
         if (character[direction].walk1 === id || 
             character[direction].still === id || 
             character[direction].walk2 === id ||
-            character[direction].attack === id)
+            character[direction].attack === id ||
+            character[direction].dead === id)
             return direction;
     }
     return null;
@@ -170,6 +194,9 @@ const moveCharacter = (characterIds, currentPos, direction) => {
     const currentDirection = getDirection(characterIds, currentId);
     const nextId = getNextId(currentId, characterIds[direction]);
 
+    if (currentId === characterIds[currentDirection].dead)
+        return currentPos;
+
     if (currentId === characterIds[currentDirection].attack) {
         // remove sword
         const swordPos = getNextPosition(currentPos, currentDirection);
@@ -194,7 +221,7 @@ const moveCharacter = (characterIds, currentPos, direction) => {
     }
 };
 
-const heroIds = getCharacterIds(124);
+const heroIds = getCharacterIds('hero');
 heroIds.right.attack = 325 + (6 * 6) + 2; // starting id + (row * rowwidth) + col
 heroIds.right.sword = 325 + (6 * 6) + 3;
 heroIds.left.attack = 325 + (7 * 6) + 3;
@@ -220,21 +247,18 @@ document.addEventListener('keydown', (e) => {
 
 // ENEMIES
 
+
+
 const enemies = [{
-    type: 'skeleton',
-    ids: getCharacterIds(130)
+    ids: getCharacterIds('skeleton')
 }, {
-    type: 'blob',
-    ids: getCharacterIds(169)
+    ids: getCharacterIds('blob')
 }, {
-    type: 'bat',
-    ids: getCharacterIds(172)
+    ids: getCharacterIds('bat')
 }, {
-    type: 'ghost',
-    ids: getCharacterIds(175)
+    ids: getCharacterIds('ghost')
 }, {
-    type: 'spider',
-    ids: getCharacterIds(178)
+    ids: getCharacterIds('spider')
 }]
 
 for(const enemy of enemies) {
@@ -275,10 +299,18 @@ const attack = (characterIds, currentPos) => {
 
     if (isValidPosition(swordPos)) {
         const swordOffset = getOffset(swordPos);
-        const nextSwordId = currentId !== characterIds[direction].attack
-                                ? characterIds[direction].sword
-                                : 0;
-        map.layers[layer.weapons].data[swordOffset] = nextSwordId;
+        if (currentId === characterIds[direction].attack) {
+            map.layers[layer.weapons].data[swordOffset] = 0;
+        }
+        else {
+            map.layers[layer.weapons].data[swordOffset] = characterIds[direction].sword;
+            for(const enemy of enemies) {
+                for(const position of enemy.positions){
+                    if (positionEq(position, swordPos))
+                        map.layers[layer.characters].data[swordOffset] = enemy.ids.down.dead;
+                }
+            }
+        }
         renderTile(swordPos);
     }
 };
