@@ -35,6 +35,7 @@ const deadids = {
     spider: 217 + 10
 };
 
+
 // TILES
 
 const loadImages = (callback) => {
@@ -245,9 +246,8 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+
 // ENEMIES
-
-
 
 const enemies = [{
     ids: getCharacterIds('skeleton')
@@ -283,6 +283,7 @@ setInterval(() => {
     iteration++;
 }, 500);
 
+
 // COMBAT
 
 const attack = (characterIds, currentPos) => {
@@ -296,29 +297,34 @@ const attack = (characterIds, currentPos) => {
 
     map.layers[layer.characters].data[currentOffset] = nextId;
     renderTile(currentPos);
+    
+    if (!isValidPosition(swordPos))
+        return
 
-    if (isValidPosition(swordPos)) {
-        const swordOffset = getOffset(swordPos);
-        if (currentId === characterIds[direction].attack) {
-            map.layers[layer.weapons].data[swordOffset] = 0;
-        }
-        else {
-            map.layers[layer.weapons].data[swordOffset] = characterIds[direction].sword;
-            for(const enemy of enemies) {
-                for(const position of enemy.positions){
-                    if (positionEq(position, swordPos))
-                        map.layers[layer.characters].data[swordOffset] = enemy.ids.down.dead;
-                }
+    const swordOffset = getOffset(swordPos);
+    if (currentId === characterIds[direction].attack) {
+        // Un-Attack
+        map.layers[layer.weapons].data[swordOffset] = 0;
+    }
+    else {
+        // Attack
+        map.layers[layer.weapons].data[swordOffset] = characterIds[direction].sword;
+        // Kill Enemies
+        for(const enemy of enemies) {
+            for(const position of enemy.positions){
+                if (positionEq(position, swordPos))
+                    map.layers[layer.characters].data[swordOffset] = enemy.ids.down.dead;
             }
         }
-        renderTile(swordPos);
     }
+    renderTile(swordPos);
 };
 
 document.addEventListener('keydown', (e) => {
     if (e.code === "Space")
         attack(heroIds, heroPosition);
 });
+
 
 // INIT
 
